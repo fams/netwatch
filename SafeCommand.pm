@@ -21,10 +21,10 @@ package SafeCommand;
  sub new{
  	my $class = shift;
  	my $self = {
- 		'_cmd-type' => "",
- 		'_cmd-hash' => "",
- 		'_cmd-string' => "",
- 		'_cmd-out'	=>"",
+ 		'_cmd_type' => "",
+ 		'_cmd_hash' => "",
+ 		'_cmd_string' => "",
+ 		'_cmd_out'	=>"",
 		};
 	my $cmd = shift;
 	bless $self, $class ;
@@ -38,39 +38,50 @@ sub init{
 
 	#Testa o tipo de commando
 	if ( -e $cmd ) {
-		$self->{_cmd-type} = "script";
+		$self->{_cmd_type} = "script";
 		open my $scfh, '<' , $cmd or die "Não foi possivel abrir $cmd\n";		
 		my $sha1 = Digest::SHA1->new;
 		$sha1->addfile($scfh);
-		$self->{_cmd-hash} = $sha1->digest;
+		$self->{_cmd_hash} = $sha1->digest;
 
 	}else{
-		$self->{_cmd-type} = "direct";
+		$self->{_cmd_type} = "direct";
 	};
-	$self->{_cmd-string} = $cmd;
+	$self->{_cmd_string} = $cmd;
 }
 
 sub issafe{
 	my $self = shift;
-	if ($self->{_cmd-type} == "script"){
-		if ( ! -e $cmd ) {
-			return false;
+	my $cmd =  $self->{_cmd_string};
+	if ($self->{_cmd_type} eq "script"){
+		unless ( -e $cmd ) {
+			return 0;
 		}
-		my $cmd =  $self->{cmd-string};
-		open my $scfh, '<' $cmd ,or die "Não foi possivel abrir $l2idf\n";		
+		open my $scfh, '<', $cmd ,or die "Não foi possivel abrir $cmd\n";		
 		my $sha1 = Digest::SHA1->new;
 		$sha1->addfile($scfh);
-		return ($self->{cmd-hash} eq $sha1->digest);
+		return ($self->{_cmd_hash} eq $sha1->digest);
 	}
-}
+	return 1;
+};
 sub run{
 	my $self = shift;
 	my $param = shift;
-	return 0 unless issafe;
-	my $tmp;
-	open( CMD, "-|", $self->{cmd-script}." 2>&1 ", $param ) or return 0;
-  chomp($tmp = <CMD>);
+	return 0 unless issafe($self);
+	my $cmd;
+	if ($self->{_cmd_type} eq 'direct'){
+		$cmd = "/bin/bash -c '". $self->{_cmd_string}." 2>&1 '";
+	}else{
+		$cmd = $self->{_cmd_string}." 2>&1";
+	}
+	open( CMD, "-|", $cmd , $param ) or return 0;
+  my $tmp = <CMD>;
   close CMD;
   chomp($tmp);
-  $self->{cmd-out} = $tmp;
+  $self->{_cmd_out} = $tmp;
+};
+
+sub out{
+	my $self = shift;
+	return $self->{_cmd_out};
 }

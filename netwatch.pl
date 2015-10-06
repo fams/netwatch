@@ -7,7 +7,9 @@ use Getopt::Long;
 use Pod::Usage;
 use Net::Ping;
 use POSIX qw(setsid);
-#use SafeCommand;
+use SafeCommand;
+use IO::Handle;
+
 
 
 my $host="";
@@ -19,8 +21,8 @@ my $downscript="";
 my $logfile="";
 
 
-my $upscript_hash="";
-my $downscript_hash="";
+my $upscript_cmd="";
+my $downscript_cmd="";
 
 my $lfhd;
 
@@ -81,7 +83,7 @@ sub checkhost ( $ $ $ ) {
 		debug ("Check Return\n\tRet: ${ret}, Duration: ${duration}, IP: ${ip}",2);
 		$fail++ unless ($ret) ;
 	};
-	say ("Fail $fail times");
+	debug ("Fail $fail times");
 	return ($fail != $retries);
 }
 
@@ -90,7 +92,7 @@ sub debug{
 	my $level = shift || 1;
 	if (defined $lfhd){		
 		unless ($verbose < 2 and $level >1) {
-			say $lfhd, $msg;
+			say $lfhd $msg;
 		}
 	}
 	if ($verbose ge $level) {
@@ -100,16 +102,17 @@ sub debug{
 
 sub runup{
 	debug ("running $upscript ", 1);
-	if (system ($upscript)) {
+	if ($upscript_cmd->run()) {
 		return "Online";
 	}else {
 		debug("Up Fail: $upscript");
+		debug($upscript_cmd->out);
 		return "Up Fail: $upscript";
 	}
 }
 sub rundown{
 	debug ("running $downscript ", 1);
-	if (system ($downscript)) {
+	if ($downscript_cmd->run()) {
 		return "Down";
 	}else {
 		debug ("Down Fail: $downscript");
@@ -119,7 +122,7 @@ sub rundown{
 
 sub procname( $ $ ){
 	my ($h, $s) = @_;
-	$$cmdline	= "CheckHost: Host $h is $s ";
+	$$cmdline	= "Netwatch: Host $h is $s ";
 }
 ##############START HHRER
 my $state = "Undefined";
@@ -127,12 +130,14 @@ my $state = "Undefined";
 if ($daemon){
 	daemonize;
 }
+$upscript_cmd =  SafeCommand->new($upscript);
+$downscript_cmd = SafeCommand->new($downscript);
 #Set CMD Name
 procname ($host, $state);
 
-
 if ($logfile) {
-	open $lfhd, ">" . $logfile;
+	open $lfhd, ">" , $logfile or die "Could not open Logfile $logfile";
+	$lfhd->autoflush;
 }
 while (1) {
  	if (checkhost ($host, $timeout, $retries)){
