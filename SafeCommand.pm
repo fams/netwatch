@@ -15,7 +15,8 @@ package SafeCommand;
  use feature ':5.10';
  our $VERSION = 1.001;
 
- use MDigest::SHA1 qw(sha1 sha1_hex sha1_base64);
+ use Digest::SHA1 qw(sha1 sha1_hex sha1_base64);
+
 
  sub new{
  	my $class = shift;
