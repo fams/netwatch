@@ -6,6 +6,8 @@ use feature ':5.10';
 use Getopt::Long;
 use Pod::Usage;
 use Net::Ping;
+use POSIX qw(setsid);
+#use SafeCommand;
 
 
 my $host="";
@@ -14,13 +16,17 @@ my $interval=60;
 my $retries=3;
 my $upscript="";
 my $downscript="";
+my $logfile="";
+
 
 my $upscript_hash="";
 my $downscript_hash="";
 
+my $lfhd;
+
 my $man  = 0;
 my $help = 0;
-my $daemonize = 0;
+my $daemon = 0;
 my $verbose = 0;
 
 
@@ -31,7 +37,8 @@ GetOptions ("host|h=s" => \$host,    # string
             "up-script|u=s" => \$upscript,
             "down-script|d=s" => \$downscript,
             "verbose|v:s"			=> \$verbose,
-            "daemon|b"			=> \$daemonize,
+            "daemon|b"			=> \$daemon,
+            "logfile|l=s"   => \$logfile,
             "man|m" 				=> \$man,
             "help|?"				=> \$help)
   or pod2usage(2);
@@ -40,19 +47,27 @@ pod2usage(1) if $help;
 pod2usage(1) if $host =~ /^$/;
 pod2usage(1) if $upscript =~ /^$/;
 pod2usage(1) if $downscript =~ /^$/;
-pod2usage(1) if ($verbose and $daemonize);
+pod2usage(1) if ($verbose and $daemon);
 pod2usage(-exitval => 0, -verbose => 2) if $man;
 
 my $cmdline = \$0;
 
 sub daemonize {
-	say "daemon";
+#deamonize
+chdir '/';
+umask 0;
+open (STDIN,'/dev/null') or die ('Nao foi possivel abrir /dev/null $!');
+open (STDERR,'>/dev/null') or die ('Nao foi possivel abrir /dev/null $!');
+open (STDOUT,'>/dev/null') or die ('Nao foi possivel abrir /dev/null $!');
+
+defined(my $pid = fork) or die ('Cannot fork');
+exit if $pid;
+setsid or die ('Nao foi possivel iniciar nova sessao');
+
 }
 
 sub sanitize{
-	# test scripts
-	#up script
-
+	
 
 }
 
@@ -73,7 +88,11 @@ sub checkhost ( $ $ $ ) {
 sub debug{
 	my $msg = shift;
 	my $level = shift || 1;
-
+	if (defined $lfhd){		
+		unless ($verbose < 2 and $level >1) {
+			say $lfhd, $msg;
+		}
+	}
 	if ($verbose ge $level) {
 		say $msg;
 	}
@@ -102,10 +121,19 @@ sub procname( $ $ ){
 	my ($h, $s) = @_;
 	$$cmdline	= "CheckHost: Host $h is $s ";
 }
-
+##############START HHRER
 my $state = "Undefined";
+
+if ($daemon){
+	daemonize;
+}
+#Set CMD Name
 procname ($host, $state);
 
+
+if ($logfile) {
+	open $lfhd, ">" . $logfile;
+}
 while (1) {
  	if (checkhost ($host, $timeout, $retries)){
 		if ($state ne "Online"){

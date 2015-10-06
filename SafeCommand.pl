@@ -20,9 +20,10 @@ package SafeCommand;
  sub new{
  	my $class = shift;
  	my $self = {
- 		'_cmd-type' => "";
- 		'_cmd-hash' => "";
- 		'_cmd-string' => "";
+ 		'_cmd-type' => "",
+ 		'_cmd-hash' => "",
+ 		'_cmd-string' => "",
+ 		'_cmd-out'	=>"",
 		};
 	my $cmd = shift;
 	bless $self, $class ;
@@ -65,5 +66,10 @@ sub run{
 	my $self = shift;
 	my $param = shift;
 	return 0 unless issafe;
-	system ($self->{cmd-script}." ".$param);
+	my $tmp;
+	open( CMD, "-|", $self->{cmd-script}." 2>&1 ", $param ) or return 0;
+  chomp($tmp = <CMD>);
+  close CMD;
+  chomp($tmp);
+  $self->{cmd-out} = $tmp;
 }
