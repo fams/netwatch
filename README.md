@@ -18,6 +18,7 @@ Usage:
             -man                Full documentation
 
 Options:
+
     -host   Hostname to monitor
 
     -timeout
