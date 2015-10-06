@@ -15,6 +15,9 @@ my $retries=3;
 my $upscript="";
 my $downscript="";
 
+my $upscript_hash="";
+my $downscript_hash="";
+
 my $man  = 0;
 my $help = 0;
 my $daemonize = 0;
@@ -22,12 +25,12 @@ my $verbose = 0;
 
 
 GetOptions ("host|h=s" => \$host,    # string
-            "timeout|t=i"   => \$timeout,      # numeric
-            "interval|i=i"  => \$interval,   # numeric
-            "retries|r=i" 	=> \$retries,	#numeric
+            "timeout|t=i"   => \$timeout,  # numeric
+            "interval|i=i"  => \$interval, # numeric
+            "retries|r=i" 	=> \$retries,	 #numeric
             "up-script|u=s" => \$upscript,
-            "down-script|d" => \$downscript,
-            "verbose|v"			=> \$verbose,
+            "down-script|d=s" => \$downscript,
+            "verbose|v:s"			=> \$verbose,
             "daemon|b"			=> \$daemonize,
             "man|m" 				=> \$man,
             "help|?"				=> \$help)
@@ -46,30 +49,52 @@ sub daemonize {
 	say "daemon";
 }
 
+sub sanitize{
+	# test scripts
+	#up script
 
-sub check ( $ $ $ ) {
+
+}
+
+sub checkhost ( $ $ $ ) {
 	my ($host, $timeout, $retries) = @_;
 	my $fail=0;
 	my $p = Net::Ping->new("icmp");
+	debug ("Check $host");
 	for (my $i=0 ; $i < $retries ; $i++){
-		#my ($ret, $duration, $ip) = $p->ping($host, $timeout);
-		$fail++ unless ($p->ping($host, $timeout)) ;
+		my ($ret, $duration, $ip) = $p->ping($host, $timeout);
+		debug ("Check Return\n\tRet: ${ret}, Duration: ${duration}, IP: ${ip}",2);
+		$fail++ unless ($ret) ;
 	};
+	say ("Fail $fail times");
 	return ($fail != $retries);
 }
+
+sub debug{
+	my $msg = shift;
+	my $level = shift || 1;
+
+	if ($verbose ge $level) {
+		say $msg;
+	}
+}
+
 sub runup{
-	print $upscript;
+	debug ("running $upscript ", 1);
 	if (system ($upscript)) {
 		return "Online";
 	}else {
-		return "Erro em $upscript";
+		debug("Up Fail: $upscript");
+		return "Up Fail: $upscript";
 	}
 }
 sub rundown{
+	debug ("running $downscript ", 1);
 	if (system ($downscript)) {
 		return "Down";
 	}else {
-		return "Erro em $downscript";
+		debug ("Down Fail: $downscript");
+		return "Fail: $downscript";
 	}
 }
 
@@ -82,7 +107,7 @@ my $state = "Undefined";
 procname ($host, $state);
 
 while (1) {
- 	if (check ($host, $timeout, $retries)){
+ 	if (checkhost ($host, $timeout, $retries)){
 		if ($state ne "Online"){
 			my $ret = runup();
 			procname ($host, $ret);
@@ -108,12 +133,12 @@ netwatch - Monitor remote host and takes an action
 netwatch [options]
 
  Options:
-	-host|h host        Hostname to monitor
-	-timeout|t seconds  Monitor timeout
+	-host|h host        Hostname to monitor (required)
+	-timeout|t seconds  Monitor timeout 
 	-interval|i seconds Check interval
 	-retries|r retries  Check retries
-	-up-script|u cmd    Command to be executed when host is up
-	-down-script|d cmd  Command to be executed when host is down
+	-up-script|u cmd    Host up command (required)
+	-down-script|d cmd  Host down command (required)
 	-verbose|v          Print State and operations on console
 	-daemon|b           Background process, could not be used with verbose
 	-help               Brief help message
