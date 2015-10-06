@@ -66,19 +66,20 @@ sub issafe{
 };
 sub run{
 	my $self = shift;
-	my $param = shift;
+	my $param = shift || "";
 	return 0 unless issafe($self);
 	my $cmd;
 	if ($self->{_cmd_type} eq 'direct'){
-		$cmd = "/bin/bash -c '". $self->{_cmd_string}." 2>&1 '";
+		$cmd = "/bin/bash -c '". $self->{_cmd_string}."'";
 	}else{
-		$cmd = $self->{_cmd_string}." 2>&1";
+		$cmd = $self->{_cmd_string};
 	}
-	open( CMD, "-|", $cmd , $param ) or return 0;
+	my $ret = open( CMD, "-|", $cmd , '2>&1' ,$param );
   my $tmp = <CMD>;
   close CMD;
-  chomp($tmp);
+  chomp($tmp) if defined $tmp;
   $self->{_cmd_out} = $tmp;
+  return $ret;
 };
 
 sub out{
