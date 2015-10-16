@@ -143,7 +143,9 @@ if ($logfile) {
 while (1) {
  	if (checkhost ($host, $timeout, $retries)){
 		if ($state ne "Online"){
+      debug("State was $state and now is $ret",2);
 			my $ret = runup();
+      debug("State was $state and now is $ret",2);
       $state = $ret;
 			procname ($host, $ret);
 		};
@@ -151,11 +153,12 @@ while (1) {
 		if($state ne "Down"){
 			my $ret = rundown();
       $state = $ret;
+      debug("State was $state and now is $ret",2);
 			procname ($host, $ret);
 		};
 	};
+  debug("Sleeping for $interval" , 2);
 	sleep $interval;
-
 };
 
 __END__
