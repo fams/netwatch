@@ -38,7 +38,7 @@ GetOptions ("host|h=s" => \$host,    # string
             "retries|r=i" 	=> \$retries,	 #numeric
             "up-script|u=s" => \$upscript,
             "down-script|d=s" => \$downscript,
-            "verbose|v:s"			=> \$verbose,
+            "verbose|v:i"			=> \$verbose,
             "daemon|b"			=> \$daemon,
             "logfile|l=s"   => \$logfile,
             "man|m" 				=> \$man,
@@ -124,7 +124,8 @@ sub procname( $ $ ){
 	my ($h, $s) = @_;
 	$$cmdline	= "Netwatch: Host $h is $s ";
 }
-##############START HHRER
+
+##############START HERE
 my $state = "Undefined";
 
 if ($daemon){
@@ -148,6 +149,7 @@ while (1) {
 	}else{
 		if($state ne "Down"){
 			my $ret = rundown();
+      $state = $ret;
 			procname ($host, $ret);
 		};
 	};
