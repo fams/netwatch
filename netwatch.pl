@@ -144,6 +144,7 @@ while (1) {
  	if (checkhost ($host, $timeout, $retries)){
 		if ($state ne "Online"){
 			my $ret = runup();
+      $state = $ret;
 			procname ($host, $ret);
 		};
 	}else{
