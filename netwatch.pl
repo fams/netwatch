@@ -143,7 +143,6 @@ if ($logfile) {
 while (1) {
  	if (checkhost ($host, $timeout, $retries)){
 		if ($state ne "Online"){
-      debug("State was $state and now is $ret",2);
 			my $ret = runup();
       debug("State was $state and now is $ret",2);
       $state = $ret;
